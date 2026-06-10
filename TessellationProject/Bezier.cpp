@@ -9,6 +9,13 @@ BezierSurface::BezierSurface()
 	glGenVertexArrays(1, &netVAO);
 	glGenBuffers(1, &netEBO);
 
+	Mesh();
+}
+
+void BezierSurface::Mesh()
+{
+	static int currentMesh = 1;
+	currentMesh = (currentMesh + 1) % 2;
 	// Generate an array of control points for a simple Bezier surface
 	for (size_t i = 0; i < 4; i++)
 	{
@@ -21,7 +28,10 @@ BezierSurface::BezierSurface()
 	{
 		for (size_t j = 1; j < 3; j++)
 		{
-			vertices[i * 4 + j].y = 2.0f;
+			if(currentMesh==0)
+				vertices[i * 4 + j].y = 2.0f;
+			else
+				vertices[i * 4 + j].y = -1.0f;
 		}
 	}
 	glBindVertexArray(VAO);
@@ -34,6 +44,11 @@ BezierSurface::BezierSurface()
 
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 3, (void*)0);
+}
+
+void BezierSurface::ChangeMesh()
+{
+	Mesh();
 }
 
 void BezierSurface::Draw(Shader& shader)

@@ -7,6 +7,8 @@ class BezierSurface
 {
 public:
 	BezierSurface();
+	void Mesh();
+	void ChangeMesh();
 	std::vector<std::vector<int>> controlPoints;
 	int subdivisionsU = 4;
 	int subdivisionsV = 4;

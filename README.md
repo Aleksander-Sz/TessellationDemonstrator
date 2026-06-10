@@ -1,2 +1,2 @@
 **My first project in OpenGL**
-Based on the book Learn OpenGL by Joey De Vries
+A project prepared as part of a Graphics 2 class

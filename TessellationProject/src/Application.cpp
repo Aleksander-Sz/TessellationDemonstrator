@@ -25,8 +25,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
+bool ChangeMeshSignal = false;
 void processInput(GLFWwindow* window)
 {
+	static bool OnePressed = false;
 	const float cameraSpeed = 2.5f * deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -42,6 +44,16 @@ void processInput(GLFWwindow* window)
 		camera.cameraPos.y += cameraSpeed;
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		camera.cameraPos.y -= cameraSpeed;
+
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+		if (!OnePressed)
+		{
+			OnePressed = true;
+			ChangeMeshSignal = true;
+		}
+
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE)
+		OnePressed = false;
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -143,6 +155,7 @@ int main()
 	lights.push_back(Light::SpotLight(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.7f), camera.cameraPos, camera.cameraFront, glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(20.0f))));
 
 	BezierSurface bezierSurface;
+	glCullFace(GL_NONE);
 
 	int frame = 0;
 	glViewport(0, 0, windowWidth, windowHeight);
@@ -150,6 +163,12 @@ int main()
 	while (!glfwWindowShouldClose(window))
 	{
 		processInput(window);
+
+		if (ChangeMeshSignal)
+		{
+			ChangeMeshSignal = false;
+			bezierSurface.ChangeMesh();
+		}
 
 		//rendering commands here
 		ourShader.use();

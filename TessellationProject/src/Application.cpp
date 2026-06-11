@@ -27,10 +27,12 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 bool ChangeMeshSignal = false;
 bool ChangeShading = false;
+bool DisplayControlNet = false;
 void processInput(GLFWwindow* window)
 {
 	static bool OnePressed = false;
 	static bool TwoPressed = false;
+	static bool ThreePressed = false;
 	const float cameraSpeed = 2.5f * deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -54,8 +56,8 @@ void processInput(GLFWwindow* window)
 			ChangeMeshSignal = true;
 		}
 
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE)
-		TwoPressed = false;
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE)
+		OnePressed = false;
 
 	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
 		if (!TwoPressed)
@@ -64,8 +66,19 @@ void processInput(GLFWwindow* window)
 			ChangeShading = true;
 		}
 
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE)
-		OnePressed = false;
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE)
+		TwoPressed = false;
+
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+		if (!ThreePressed)
+		{
+			ThreePressed = true;
+			DisplayControlNet = !DisplayControlNet;
+		}
+
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE)
+		ThreePressed = false;
+
 }
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
@@ -102,6 +115,44 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 		camera.zoom = 1.0f;
 	if (camera.zoom > 45.0f)
 		camera.zoom = 45.0f;
+}
+
+GLuint LoadTexture(const char* path)
+{
+	GLuint tex;
+	glGenTextures(1, &tex);
+	glBindTexture(GL_TEXTURE_2D, tex);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	int width, height, nrChannels;
+	stbi_set_flip_vertically_on_load(true);
+
+	unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
+
+	if (!data)
+	{
+		std::cout << "Failed to load: " << path << "\n";
+		return 0;
+	}
+
+	GLenum format =
+		(nrChannels == 4) ? GL_RGBA :
+		(nrChannels == 3) ? GL_RGB :
+		GL_RED;
+
+	glTexImage2D(GL_TEXTURE_2D, 0, format,
+		width, height, 0,
+		format, GL_UNSIGNED_BYTE, data);
+
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	stbi_image_free(data);
+
+	return tex;
 }
 
 int main()
@@ -170,6 +221,14 @@ int main()
 
 	BezierSystem bezierSystem;
 
+	// Textures
+	unsigned int textures[3];
+	glGenTextures(3, textures);
+	textures[0] = LoadTexture("Textures/diffuse.png");
+	textures[1] = LoadTexture("Textures/height.png");
+	textures[2] = LoadTexture("Textures/normals.png");
+
+
 	glCullFace(GL_NONE);
 
 	int frame = 0;
@@ -197,30 +256,41 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		ourShader.setMat4("view", camera.view());
 		ourShader.setMat4("projection", camera.projection());
-		ourShader.setInt("numLights", lights.size());
 		chosenTessShader->use();
+		chosenTessShader->setInt("numLights", lights.size());
 		chosenTessShader->setMat4("view", camera.view());
 		chosenTessShader->setMat4("projection", camera.projection());
-		ourShader.use();
 		lights[lights.size() - 1].UpdateFlashlight(camera); // Update spotlight to follow the camera
 		for (int i = 0; i < lights.size(); i++)
 		{
-			ourShader.setVec3( "lights[" + std::to_string(i) + "].ambient",     lights[i].ambient);
-			ourShader.setVec3( "lights[" + std::to_string(i) + "].diffuse",     lights[i].diffuse);
-			ourShader.setVec3( "lights[" + std::to_string(i) + "].specular",    lights[i].specular);
-			ourShader.setVec3( "lights[" + std::to_string(i) + "].position",    lights[i].position);
-			ourShader.setVec3( "lights[" + std::to_string(i) + "].direction",   lights[i].direction);
-			ourShader.setFloat("lights[" + std::to_string(i) + "].cutOff",      lights[i].cutOff);
-			ourShader.setFloat("lights[" + std::to_string(i) + "].outerCutOff", lights[i].outerCutOff);
-			ourShader.setInt(  "lights[" + std::to_string(i) + "].type",        lights[i].type); // 0: directional light, 1: point light, 2: spotlight
-			ourShader.setFloat("lights[" + std::to_string(i) + "].constant",    lights[i].constant);
-			ourShader.setFloat("lights[" + std::to_string(i) + "].linear",      lights[i].linear);
-			ourShader.setFloat("lights[" + std::to_string(i) + "].quadratic",   lights[i].quadratic);
+			chosenTessShader->setVec3( "lights[" + std::to_string(i) + "].ambient",     lights[i].ambient);
+			chosenTessShader->setVec3( "lights[" + std::to_string(i) + "].diffuse",     lights[i].diffuse);
+			chosenTessShader->setVec3( "lights[" + std::to_string(i) + "].specular",    lights[i].specular);
+			chosenTessShader->setVec3( "lights[" + std::to_string(i) + "].position",    lights[i].position);
+			chosenTessShader->setVec3( "lights[" + std::to_string(i) + "].direction",   lights[i].direction);
+			chosenTessShader->setFloat("lights[" + std::to_string(i) + "].cutOff",      lights[i].cutOff);
+			chosenTessShader->setFloat("lights[" + std::to_string(i) + "].outerCutOff", lights[i].outerCutOff);
+			chosenTessShader->setInt(  "lights[" + std::to_string(i) + "].type",        lights[i].type); // 0: directional light, 1: point light, 2: spotlight
+			chosenTessShader->setFloat("lights[" + std::to_string(i) + "].constant",    lights[i].constant);
+			chosenTessShader->setFloat("lights[" + std::to_string(i) + "].linear",      lights[i].linear);
+			chosenTessShader->setFloat("lights[" + std::to_string(i) + "].quadratic",   lights[i].quadratic);
 		}
-		ourShader.setVec3("viewPos", camera.cameraPos);
+		chosenTessShader->setVec3("viewPos", camera.cameraPos);
 		//material properties
-		ourShader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
-		ourShader.setFloat("material.shininess", 32.0f);
+		chosenTessShader->setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
+		chosenTessShader->setFloat("material.shininess", 32.0f);
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, textures[0]);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, textures[1]);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, textures[2]);
+
+		chosenTessShader->setInt("material.diffuse", 0);
+		chosenTessShader->setInt("material.height", 1);
+		chosenTessShader->setInt("material.normal", 2);
+
 		//
 		
 		if (chosenTessShader == &tessShaderPhong)
@@ -229,8 +299,12 @@ int main()
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 		bezierSystem.Draw(*chosenTessShader, camera.cameraPos);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		bezierSystem.DrawControlNet(ourShader, camera.cameraPos);
+		if (DisplayControlNet)
+		{
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+			bezierSystem.DrawControlNet(ourShader, camera.cameraPos);
+
+		}
 		
 		glBindVertexArray(0);
 		

@@ -1,8 +1,8 @@
 #version 330 core
 
 struct Material {
-	sampler2D texture_diffuse1;
-	sampler2D texture_specular1;
+	sampler2D diffuse;
+	sampler2D normal;
 	float shininess;
 };
 struct Light {
@@ -27,6 +27,8 @@ in vec4 vertexColor;
 in vec2 texCoords;
 in vec3 normal;
 in vec3 fragPos;
+in vec3 T;
+in vec3 B;
 
 uniform vec3 viewPos;
 uniform int numLights;
@@ -62,13 +64,19 @@ vec4 CalcSpotLight(Light inLight, vec3 inFragPos)
 
 void main()
 {
+	vec3 N = normalize(gl_FrontFacing ? normal : -normal);
+	mat3 TBN = mat3(T, B, N);
+	vec3 normalMap = texture(material.normal, texCoords).xyz;
+	normalMap = normalMap * 2.0 - 1.0;
+	// convert to world space
+	N = normalize(TBN * normalMap);
 	//texture
-	vec3 diffuseColor = texture(material.texture_diffuse1, texCoords).xyz;
-	vec3 specularColor = texture(material.texture_specular1, texCoords).xyz;
+	vec3 diffuseColor = texture(material.diffuse, texCoords).xyz;
+	vec3 specularColor = vec3(1.0f, 1.0f, 1.0f);//= texture(material.texture_specular1, texCoords).xyz;
 	// ambient
 	vec3 ambient = diffuseColor * lights[0].ambient;
 	
-	vec3 normalizedNormal = normalize(normal);
+	vec3 normalizedNormal = normalize(N);
 	vec3 totalColor = ambient;
 	for(int i = 0; i < numLights; i++)
 	{
@@ -97,4 +105,7 @@ void main()
 		totalColor += finalColor;
 	}
 	FragColor = vec4(totalColor, 1.0f);
+	//FragColor = vec4(N * 0.5 + 0.5, 1.0f);
+	//FragColor = vec4(lights[0].diffuse, 1.0f);
+	//FragColor = vec4(diffuse , 1.0f);
 }

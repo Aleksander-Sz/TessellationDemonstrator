@@ -168,6 +168,9 @@ void BezierSystem::Draw(Shader& shader, glm::vec3 cameraLocation)
 			shader.setFloat("tessLevelOuterLeft", horizontalBorderFactors[i][j]);
 			shader.setFloat("tessLevelOuterBottom", verticalBorderFactors[j][i]);
 			shader.setFloat("tessLevelOuterTop", verticalBorderFactors[j][i+1]);
+			shader.setFloat("offsetX", j);
+			shader.setFloat("offsetZ", i);
+			shader.setFloat("totalShapeSize", 4.0f);
 			surfaces[i*4+j].Draw(shader, cameraLocation);
 		}
 	}

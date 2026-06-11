@@ -94,7 +94,7 @@ void BezierSystem::CalculateBorderFactors(glm::vec3 cameraLocation)
 	{
 		for (size_t j = 0; j < 5; j++)
 		{
-			glm::vec3 location = glm::vec3(-1.5f + 3.0f * j, 0.0f, i * 3.0f);
+			glm::vec3 location = glm::vec3(-2.0f + 4.0f * j, 0.0f, i * 4.0f);
 			horizontalBorderFactors[i][j] = CalculateFactor(location, cameraLocation);
 		}
 	}
@@ -103,7 +103,7 @@ void BezierSystem::CalculateBorderFactors(glm::vec3 cameraLocation)
 	{
 		for (size_t j = 0; j < 5; j++)
 		{
-			glm::vec3 location = glm::vec3(i * 3.0f, 0.0f, -1.5f + 3.0f * j);
+			glm::vec3 location = glm::vec3(i * 4.0f, 0.0f, -2.0f + 4.0f * j);
 			verticalBorderFactors[i][j] = CalculateFactor(location, cameraLocation);
 		}
 	}
@@ -170,7 +170,7 @@ void BezierSystem::Draw(Shader& shader, glm::vec3 cameraLocation)
 			shader.setFloat("tessLevelOuterTop", verticalBorderFactors[j][i+1]);
 			shader.setFloat("offsetX", j);
 			shader.setFloat("offsetZ", i);
-			shader.setFloat("totalShapeSize", 4.0f);
+			shader.setFloat("totalShapeSize", 3.0f);
 			surfaces[i*4+j].Draw(shader, cameraLocation);
 		}
 	}

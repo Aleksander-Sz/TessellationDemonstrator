@@ -139,6 +139,7 @@ void main()
         view *
         model *
         vec4(position, 1.0);
-        
+    position.x += offsetZ * 3.0f;
+    position.z += offsetX * 3.0f;
     fragPos = position;
 }

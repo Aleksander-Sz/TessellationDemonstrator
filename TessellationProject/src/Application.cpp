@@ -26,9 +26,11 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 bool ChangeMeshSignal = false;
+bool ChangeShading = false;
 void processInput(GLFWwindow* window)
 {
 	static bool OnePressed = false;
+	static bool TwoPressed = false;
 	const float cameraSpeed = 2.5f * deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -50,6 +52,16 @@ void processInput(GLFWwindow* window)
 		{
 			OnePressed = true;
 			ChangeMeshSignal = true;
+		}
+
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_RELEASE)
+		TwoPressed = false;
+
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+		if (!TwoPressed)
+		{
+			TwoPressed = true;
+			ChangeShading = true;
 		}
 
 	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_RELEASE)
@@ -140,8 +152,10 @@ int main()
 
 	// Rendering commands here
 
-	Shader ourShader("Shaders/VertexShader.glsl","Shaders/FragmentShader.glsl");
+	Shader ourShader("Shaders/VertexShader.glsl","Shaders/FragmentShaderFlat.glsl");
 	Shader tessShader("Shaders/BezierVertexShader.glsl", "Shaders/SurfaceTessellationControlShader.glsl", "Shaders/SurfaceTessellationEvaluationShader.glsl", "Shaders/FragmentShaderFlat.glsl");
+	Shader tessShaderPhong("Shaders/BezierVertexShader.glsl", "Shaders/SurfaceTessellationControlShader.glsl", "Shaders/SurfaceTessellationEvaluationShader.glsl", "Shaders/FragmentShader.glsl");
+	Shader* chosenTessShader = &tessShader;
 	ourShader.use();
 
 	glEnable(GL_DEPTH_TEST);
@@ -154,7 +168,8 @@ int main()
 	lights.push_back(Light::PointLight(glm::vec3(0.0f, 0.3f, 0.0f), glm::vec3(0.3f), glm::vec3(-2.0f, 1.0f, 0.0f)));
 	lights.push_back(Light::SpotLight(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.7f), camera.cameraPos, camera.cameraFront, glm::cos(glm::radians(12.5f)), glm::cos(glm::radians(20.0f))));
 
-	BezierSurface bezierSurface;
+	BezierSystem bezierSystem;
+
 	glCullFace(GL_NONE);
 
 	int frame = 0;
@@ -167,7 +182,12 @@ int main()
 		if (ChangeMeshSignal)
 		{
 			ChangeMeshSignal = false;
-			bezierSurface.ChangeMesh();
+			bezierSystem.ChangeMesh();
+		}
+		if (ChangeShading)
+		{
+			ChangeShading = false;
+			chosenTessShader = (chosenTessShader == &tessShader) ? &tessShaderPhong : &tessShader;
 		}
 
 		//rendering commands here
@@ -178,9 +198,9 @@ int main()
 		ourShader.setMat4("view", camera.view());
 		ourShader.setMat4("projection", camera.projection());
 		ourShader.setInt("numLights", lights.size());
-		tessShader.use();
-		tessShader.setMat4("view", camera.view());
-		tessShader.setMat4("projection", camera.projection());
+		chosenTessShader->use();
+		chosenTessShader->setMat4("view", camera.view());
+		chosenTessShader->setMat4("projection", camera.projection());
 		ourShader.use();
 		lights[lights.size() - 1].UpdateFlashlight(camera); // Update spotlight to follow the camera
 		for (int i = 0; i < lights.size(); i++)
@@ -202,7 +222,15 @@ int main()
 		ourShader.setVec3("material.specular", glm::vec3(0.5f, 0.5f, 0.5f));
 		ourShader.setFloat("material.shininess", 32.0f);
 		//
-		bezierSurface.Draw(tessShader);
+		
+		if (chosenTessShader == &tessShaderPhong)
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		else
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+		bezierSystem.Draw(*chosenTessShader, camera.cameraPos);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		bezierSystem.DrawControlNet(ourShader, camera.cameraPos);
 		
 		glBindVertexArray(0);
 		

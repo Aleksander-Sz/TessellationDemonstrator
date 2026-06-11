@@ -28,11 +28,14 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 bool ChangeMeshSignal = false;
 bool ChangeShading = false;
 bool DisplayControlNet = false;
+float subdivisionMultiplier = 1.0f;
 void processInput(GLFWwindow* window)
 {
 	static bool OnePressed = false;
 	static bool TwoPressed = false;
 	static bool ThreePressed = false;
+	static bool IPressed = false;
+	static bool KPressed = false;
 	const float cameraSpeed = 2.5f * deltaTime;
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
@@ -78,6 +81,30 @@ void processInput(GLFWwindow* window)
 
 	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_RELEASE)
 		ThreePressed = false;
+
+	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS)
+		if (!IPressed)
+		{
+			IPressed = true;
+			subdivisionMultiplier += 0.1f;
+			if (subdivisionMultiplier >= 2.0f)
+				subdivisionMultiplier = 2.0f;
+		}
+
+	if (glfwGetKey(window, GLFW_KEY_I) == GLFW_RELEASE)
+		IPressed = false;
+
+	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS)
+		if (!KPressed)
+		{
+			KPressed = true;
+			subdivisionMultiplier -= 0.1f;
+			if (subdivisionMultiplier <= 0.4f)
+				subdivisionMultiplier = 0.4f;
+		}
+
+	if (glfwGetKey(window, GLFW_KEY_K) == GLFW_RELEASE)
+		KPressed = false;
 
 }
 
@@ -298,7 +325,7 @@ int main()
 		else
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-		bezierSystem.Draw(*chosenTessShader, camera.cameraPos);
+		bezierSystem.Draw(*chosenTessShader, camera.cameraPos, subdivisionMultiplier);
 		if (DisplayControlNet)
 		{
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

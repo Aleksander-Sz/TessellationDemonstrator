@@ -87,7 +87,7 @@ float CalculateFactor(glm::vec3 location, glm::vec3 cameraLocation)
 	return -16.0f * log10(distance * 0.01f) * TESS_MULTIPLIER;
 }
 
-void BezierSystem::CalculateBorderFactors(glm::vec3 cameraLocation)
+void BezierSystem::CalculateBorderFactors(glm::vec3 cameraLocation, float subdivisionMultiplier)
 {
 	// Horizontal
 	for (size_t i = 0; i < 4; i++)
@@ -95,7 +95,7 @@ void BezierSystem::CalculateBorderFactors(glm::vec3 cameraLocation)
 		for (size_t j = 0; j < 5; j++)
 		{
 			glm::vec3 location = glm::vec3(-2.0f + 4.0f * j, 0.0f, i * 4.0f);
-			horizontalBorderFactors[i][j] = CalculateFactor(location, cameraLocation);
+			horizontalBorderFactors[i][j] = CalculateFactor(location, cameraLocation) * subdivisionMultiplier;
 		}
 	}
 	// Vertical
@@ -104,7 +104,7 @@ void BezierSystem::CalculateBorderFactors(glm::vec3 cameraLocation)
 		for (size_t j = 0; j < 5; j++)
 		{
 			glm::vec3 location = glm::vec3(i * 4.0f, 0.0f, -2.0f + 4.0f * j);
-			verticalBorderFactors[i][j] = CalculateFactor(location, cameraLocation);
+			verticalBorderFactors[i][j] = CalculateFactor(location, cameraLocation) * subdivisionMultiplier;
 		}
 	}
 }
@@ -118,11 +118,11 @@ void BezierSystem::ChangeMesh()
 	}
 }
 
-void BezierSurface::Draw(Shader& shader, glm::vec3 cameraLocation)
+void BezierSurface::Draw(Shader& shader, glm::vec3 cameraLocation, float subdivisionMultiplier)
 {
 	// Let's calculate the distance from the camera to the center of the surface
 	glm::vec3 displacement = location - cameraLocation;
-	float factor = CalculateFactor(location, cameraLocation);
+	float factor = CalculateFactor(location, cameraLocation) * subdivisionMultiplier;
 
 	shader.use();
 	glBindVertexArray(VAO);
@@ -156,9 +156,9 @@ BezierSystem::BezierSystem()
 	}
 }
 
-void BezierSystem::Draw(Shader& shader, glm::vec3 cameraLocation)
+void BezierSystem::Draw(Shader& shader, glm::vec3 cameraLocation, float subdivisionMultiplier)
 {
-	CalculateBorderFactors(cameraLocation);
+	CalculateBorderFactors(cameraLocation, subdivisionMultiplier);
 	for (size_t i = 0; i < 4; i++)
 	{
 		for (size_t j = 0; j < 4; j++)
@@ -171,7 +171,7 @@ void BezierSystem::Draw(Shader& shader, glm::vec3 cameraLocation)
 			shader.setFloat("offsetX", j);
 			shader.setFloat("offsetZ", i);
 			shader.setFloat("totalShapeSize", 3.0f);
-			surfaces[i*4+j].Draw(shader, cameraLocation);
+			surfaces[i*4+j].Draw(shader, cameraLocation, subdivisionMultiplier);
 		}
 	}
 }

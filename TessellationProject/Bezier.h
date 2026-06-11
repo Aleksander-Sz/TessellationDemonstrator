@@ -20,7 +20,7 @@ public:
 	unsigned int VAO, VBO, EBO, netVAO, netEBO;
 	std::vector<glm::vec3> vertices;
 	std::vector<unsigned int> indices;
-	void Draw(Shader& shader, glm::vec3 cameraLocation);
+	void Draw(Shader& shader, glm::vec3 cameraLocation, float subdivisionMultiplier);
 	void DrawControlNet(Shader& shader, glm::vec3 cameraLocation);
 };
 
@@ -29,9 +29,9 @@ class BezierSystem
 public:
 	BezierSystem();
 	std::vector<BezierSurface> surfaces;
-	void Draw(Shader& shader, glm::vec3 cameraLocation);
+	void Draw(Shader& shader, glm::vec3 cameraLocation, float subdivisionMultiplier);
 	void DrawControlNet(Shader& shader, glm::vec3 cameraLocation);
-	void CalculateBorderFactors(glm::vec3 cameraLocation);
+	void CalculateBorderFactors(glm::vec3 cameraLocation, float subdivisionMultiplier);
 	float horizontalBorderFactors[4][5];
 	float verticalBorderFactors[4][5];
 	void ChangeMesh();
